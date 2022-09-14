@@ -1,4 +1,5 @@
 const fs = require('fs');
+const node_path = require('path');
 
 class PersistentMap extends Map {
     #home;
@@ -8,7 +9,7 @@ class PersistentMap extends Map {
      */
     constructor(name = 'persistent', path = process.cwd()) {
         super();
-        this.#home = `${path}/${name}.json`;
+        this.#home = node_path.join(path, `${name}.json`);
 
         if (!fs.existsSync(this.#home)) {
             fs.writeFileSync(this.#home, JSON.stringify({}), 'utf-8');
