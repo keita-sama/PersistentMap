@@ -3,10 +3,6 @@ const node_path = require('path');
 
 class PersistentMap extends Map {
     #home;
-    /**
-     * @param {string} name - name of your file
-     * @param {string} path - path to your file
-     */
     constructor(name = 'persistent', path = process.cwd()) {
         super();
         this.#home = node_path.join(path, `${name}.json`);
@@ -24,26 +20,16 @@ class PersistentMap extends Map {
             }
         }
     }
-    /**
-     * @param {string|number|null|undefined|bigint|symbol|object} key
-     * @param {string|number|null|undefined|bigint|symbol|object} value
-     */
     set(key, value) {
         const val = super.set(key, value);
         this.#write(super.entries());
         return val;
     }
-    /**
-     * @param {string|number|null|undefined|bigint|symbol|object} key
-     */
     delete(key) {
         const val = super.delete(key);
         this.#write(super.entries());
         return val;
     }
-    /**
-     * @param {*} _opts
-     */
     forEach(_opts) {
         const val = super.forEach(...arguments);
         this.#write(super.entries());
