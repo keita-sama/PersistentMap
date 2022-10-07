@@ -3,10 +3,10 @@ const node_path = require('path');
 
 class PersistentMap extends Map {
     #home;
-    constructor(name = 'persistent', path = process.cwd()) {
+    constructor(name = 'persistent', writeOnOperation = true, path = process.cwd()) {
         super();
         this.#home = node_path.join(path, `${name}.json`);
-
+        this.writeOnOperation = writeOnOperation;
         if (!fs.existsSync(this.#home)) {
             fs.writeFileSync(this.#home, JSON.stringify({}), 'utf-8');
         }
@@ -22,18 +22,33 @@ class PersistentMap extends Map {
     }
     set(key, value) {
         const val = super.set(key, value);
-        this.#write(super.entries());
+        if (this.writeOnOperation === true) {
+            this.#write(super.entries());
+        }
         return val;
     }
     delete(key) {
         const val = super.delete(key);
-        this.#write(super.entries());
+        if (this.writeOnOperation === true) {
+            this.#write(super.entries());
+        }
         return val;
     }
     forEach(_opts) {
         const val = super.forEach(...arguments);
-        this.#write(super.entries());
+        if (this.writeOnOperation === true) {
+            this.#write(super.entries());
+        }
         return val;
+    }
+    clear() {
+        if (this.writeOnOperation === true) {
+            this.#write(super.entries());
+        }
+        return super.clear();
+    }
+    write() {
+        return this.#write(super.entries());
     }
     #write(data) {
         return fs.writeFileSync(this.#home, JSON.stringify(Object.fromEntries(data), null, 4), 'utf-8');
