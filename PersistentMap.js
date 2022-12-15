@@ -1,57 +1,53 @@
 const fs = require('fs');
-const node_path = require('path');
+const path = require('path');
 
 class PersistentMap extends Map {
-    #home;
-    constructor(name = 'persistent', writeOnOperation = true, path = process.cwd()) {
+    constructor(name = 'persistent', writeOnOperation = true, directory = process.cwd()) {
         super();
-        this.#home = node_path.join(path, `${name}.json`);
+        this.home = path.join(directory, `.${name}`);
         this.writeOnOperation = writeOnOperation;
-        if (!fs.existsSync(this.#home)) {
-            fs.writeFileSync(this.#home, JSON.stringify({}), 'utf-8');
+
+        if (!fs.existsSync(this.home)) fs.writeFileSync(this.home, JSON.stringify({}), 'utf-8');
+
+        const data = JSON.parse(fs.readFileSync(this.home).toString());
+        if (Object.keys(data).length !== 0) for (const [key, value] of Object.entries(data)) super.set(key, value);
+    }
+
+    set(key, value, force) {
+        super.set(key, value);
+        this.save(force);
+        return this;
+    }
+
+    delete(key, force) {
+        if (super.has(key)) {
+            super.delete(key);
+            this.save(force);
+            return true;
         }
         else {
-            const data = JSON.parse(fs.readFileSync(this.#home));
-            if (Object.keys(data).length !== 0) {
-                Object.entries(data).forEach((entry) => {
-                    const [key, value] = entry;
-                    super.set(key, value);
-                });
-            }
+            return false;
         }
     }
-    set(key, value) {
-        const val = super.set(key, value);
-        if (this.writeOnOperation === true) {
-            this.#write(super.entries());
-        }
-        return val;
+
+    forEach(func, force) {
+        super.forEach(func);
+        this.save(force);
+        return;
     }
-    delete(key) {
-        const val = super.delete(key);
-        if (this.writeOnOperation === true) {
-            this.#write(super.entries());
-        }
-        return val;
+
+    clear(force) {
+        super.clear();
+        this.save(force);
+        return;
     }
-    forEach(_opts) {
-        const val = super.forEach(...arguments);
-        if (this.writeOnOperation === true) {
-            this.#write(super.entries());
-        }
-        return val;
-    }
-    clear() {
-        if (this.writeOnOperation === true) {
-            this.#write(super.entries());
-        }
-        return super.clear();
-    }
+
     write() {
-        return this.#write(super.entries());
+        return fs.writeFileSync(this.home, JSON.stringify(Object.fromEntries(super.entries()), null, 4), 'utf-8');
     }
-    #write(data) {
-        return fs.writeFileSync(this.#home, JSON.stringify(Object.fromEntries(data), null, 4), 'utf-8');
+
+    save(force) {
+        if (this.writeOnOperation === true || force === true) this.write();
     }
 }
 

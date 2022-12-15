@@ -33,7 +33,11 @@ persistent.write();
 ```
 so choose wisely!
 
+
 Just be aware that when `writeOnOperation` is off, you'll have to manage all your data on your own.<br>
+
+If you have `writeOnOperation` disabled but still want to enable on of your functions to automatically write on operation, just set `force` to true.
+
 A potential way to keep data up-to-date:
 ```js
 // Saves data every minute.
@@ -42,3 +46,6 @@ setInterval(() => persistent.write(), 1 * 1000 * 60)
 
 ### Changelog 1.0.1
 - added `writeOnOperation`
+
+### Changelog 1.0.2
+- added `force` option
