@@ -2,26 +2,47 @@ const fs = require('fs');
 const path = require('path');
 
 class PersistentMap extends Map {
-    constructor(name = 'persistent', writeOnOperation = true, directory = process.cwd()) {
+    constructor(
+        name = 'persistent',
+        writeOnOperation = true,
+        directory = process.cwd(),
+    ) {
         super();
         this.home = path.join(directory, `.${name}`);
         this.writeOnOperation = writeOnOperation;
 
-        if (!fs.existsSync(this.home)) fs.writeFileSync(this.home, JSON.stringify({}), 'utf-8');
+        this.data = new Map();
+        this.load();
+    }
 
-        const data = JSON.parse(fs.readFileSync(this.home).toString());
-        if (Object.keys(data).length !== 0) for (const [key, value] of Object.entries(data)) super.set(key, value);
+    load() {
+        try {
+            const data = JSON.parse(fs.readFileSync(this.home));
+            if (Object.keys(data).length !== 0) {
+                for (const [key, value] of Object.entries(data)) {
+                    this.data.set(key, value);
+                }
+            }
+        }
+        catch (error) {
+            if (error.code === 'ENOENT') {
+                fs.writeFileSync(this.home, '{}');
+            }
+            else {
+                throw error;
+            }
+        }
     }
 
     set(key, value, force) {
-        super.set(key, value);
+        this.data.set(key, value);
         this.save(force);
         return this;
     }
 
     delete(key, force) {
-        if (super.has(key)) {
-            super.delete(key);
+        if (this.data.has(key)) {
+            this.data.delete(key);
             this.save(force);
             return true;
         }
@@ -31,19 +52,24 @@ class PersistentMap extends Map {
     }
 
     forEach(func, force) {
-        super.forEach(func);
+        this.data.forEach(func);
         this.save(force);
         return;
     }
 
     clear(force) {
-        super.clear();
+        this.data.clear();
         this.save(force);
         return;
     }
 
     write() {
-        return fs.writeFileSync(this.home, JSON.stringify(Object.fromEntries(super.entries()), null, 4), 'utf-8');
+        fs.writeFile(this.home, JSON.stringify(Object.fromEntries(this.data.entries()), null, 4), 'utf-8', (error) => {
+            if (error) {
+                console.error(error);
+            }
+        });
+        return;
     }
 
     save(force) {
